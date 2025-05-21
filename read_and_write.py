@@ -1,7 +1,30 @@
 
 import pandas as pd
+import datetime
 
+# read excel file from K5 system (cosmed)
+def read_k5(filename):
+    df = pd.read_excel(filename, sheet_name='Data')
+    # extract time vector, VO2 and VCO2 data
+    VCO2 = (df['VCO2'][2:-1]).to_numpy()  # in ml/min
+    VO2 = (df['VO2'][2:-1]).to_numpy()  # in ml/min
+    time = (df['t'][2:-1]).to_numpy()  # in ml/min
+    RQ = (df['RQ'][2:-1]).to_numpy()  # respiratory quotient
 
+    # convert time to seconds
+    time_vals = [t for t in time if isinstance(t, datetime.time)]
+    time_seconds = [t.hour * 3600 + t.minute * 60 + t.second for t in time_vals]
+    start_time = time_seconds[0]
+    time = [t - start_time for t in time_seconds]
+
+    # compute metabolic energy with brockways equation
+    P_metab = 16.58 * VO2 + 4.51 * VCO2  # this gives metabolic power in J/min ?
+    P_metab = P_metab / 60  # in W
+
+    # return as a pandas dataframe
+    df_metab = pd.DataFrame({'time': time, 'VO2': VO2, 'VCO2': VCO2, 'RQ': RQ, 'P_metab': P_metab})
+
+    return df_metab
 
 
 
